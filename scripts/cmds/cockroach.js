@@ -1,9 +1,9 @@
 // commands/cockroach.js
 
-const fs = require("fs-extra");
-const path = require("path");
 const axios = require("axios");
 const jimp = require("jimp");
+const path = require("path");
+const fs = require("fs-extra");
 
 module.exports.config = {
   name: "cockroach",

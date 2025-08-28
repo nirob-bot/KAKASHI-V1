@@ -5,7 +5,13 @@ const helpImages = [
   "https://files.catbox.moe/wseew7.jpg",
   "https://files.catbox.moe/tywnfi.jpg",
   "https://files.catbox.moe/tse9uk.jpg",
-  "https://files.catbox.moe/l8d5af.jpg"
+  "https://files.catbox.moe/l8d5af.jpg",
+  "https://files.catbox.moe/hgmwuw.jpg",
+  "https://files.catbox.moe/gu6m57.jpg",
+  "https://files.catbox.moe/t366ko.jpg",
+  "https://files.catbox.moe/pto5xi.jpg",
+  "https://files.catbox.moe/td2723.jpg",
+  "https://files.catbox.moe/y5kplz.jpg"
 ];
 
 // Random image
@@ -22,7 +28,7 @@ function buildCategory(catName, commands, prefix) {
 module.exports = {
   config: {
     name: "help",
-    version: "2.0",
+    version: "2.1",
     author: "ＮＩＲＯＢ",
     role: 0,
     shortDescription: { en: "Help menu with 🖤 pagination" },
@@ -90,7 +96,8 @@ module.exports = {
           let nextPage = p + 1;
           if (nextPage > totalPages) nextPage = 1;
 
-          await sendPage(nextPage, eventReact.messageID);
+          // এখানে fix করা হলো (sentMsg.messageID পাঠাচ্ছি)
+          await sendPage(nextPage, sentMsg.messageID);
         }
       });
     }

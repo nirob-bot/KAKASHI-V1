@@ -28,7 +28,7 @@ function buildCategory(catName, commands, prefix) {
 module.exports = {
   config: {
     name: "help",
-    version: "2.1",
+    version: "2.2",
     author: "ＮＩＲＯＢ",
     role: 0,
     shortDescription: { en: "Help menu with 🖤 pagination" },
@@ -75,7 +75,18 @@ module.exports = {
       for (const cat of pageCategories) {
         msg += buildCategory(cat, categories[cat], prefix);
       }
-      msg += `────────────────────────────\nDev: Nirob | Nick: Kakashi\nFB: https://facebook.com/hatake.kakashi.NN\nReact 🖤 to go next page.\n────────────────────────────`;
+
+      // Next page বের করা
+      let nextPage = p + 1;
+      if (nextPage > totalPages) nextPage = 1;
+
+      msg += `────────────────────────────
+Dev: Nirob | Nick: Kakashi
+FB: https://facebook.com/hatake.kakashi.NN
+
+React 🖤 to go next page
+or type: ${prefix}help ${nextPage}
+────────────────────────────`;
 
       const sentMsg = await message.reply({
         body: msg,
@@ -96,7 +107,6 @@ module.exports = {
           let nextPage = p + 1;
           if (nextPage > totalPages) nextPage = 1;
 
-          // এখানে fix করা হলো (sentMsg.messageID পাঠাচ্ছি)
           await sendPage(nextPage, sentMsg.messageID);
         }
       });

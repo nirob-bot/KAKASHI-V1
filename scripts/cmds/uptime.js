@@ -7,7 +7,7 @@ module.exports = {
   config: {
     name: "uptime",
     aliases: ["up", "upt"],
-    version: "2.1",
+    version: "2.2",
     author: "VEX_ADNAN",
     role: 0,
     category: "System",
@@ -39,9 +39,9 @@ module.exports = {
       // Cute image
       const imageUrl = "https://files.catbox.moe/7jqv64.jpg";
 
-      // First send "pinging..." to measure latency
+      // First send "Calculating..." to measure latency
       const sentTime = Date.now();
-      api.sendMessage("⏳ Calculating ping...", event.threadID, async (err, info) => {
+      api.sendMessage("⏳ checking Kakashi bot uptime ...", event.threadID, async (err, info) => {
         if (err) return;
 
         const ping = Date.now() - sentTime; // Real latency
@@ -63,14 +63,15 @@ module.exports = {
 ╚═══════• 💖 •═══════╝
 `;
 
-        const msg = {
-          body: msgBody,
-          attachment: await global.utils.getStreamFromURL(imageUrl)
-        };
-
-        // Edit the first message with final result
-        api.editMessage(msg.body, info.messageID, () => {
-          api.sendMessage({ attachment: msg.attachment }, event.threadID);
+        // ডিলিট করে আবার proper মেসেজ + ইমেজ পাঠানো
+        api.unsendMessage(info.messageID, () => {
+          api.sendMessage(
+            {
+              body: msgBody,
+              attachment: await global.utils.getStreamFromURL(imageUrl)
+            },
+            event.threadID
+          );
         });
       });
 

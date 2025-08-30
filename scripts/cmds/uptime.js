@@ -1,4 +1,6 @@
-const osu = require("node-os-utils");
+/cmd install uptime.js const osu = require("node-os-utils");
+const cpu = osu.cpu;
+const mem = osu.mem;
 
 // Bot start time
 if (!global.botStartTime) global.botStartTime = Date.now();
@@ -7,7 +9,7 @@ module.exports = {
   config: {
     name: "uptime",
     aliases: ["up", "upt"],
-    version: "2.2",
+    version: "2.6",
     author: "VEX_ADNAN",
     role: 0,
     category: "System",
@@ -15,37 +17,42 @@ module.exports = {
 
   onStart: async function ({ api, event }) {
     try {
-      // ⏱ Uptime calculation
-      const uptimeMs = Date.now() - global.botStartTime;
-      const totalSeconds = Math.floor(uptimeMs / 1000);
-      const seconds = totalSeconds % 60;
-      const minutes = Math.floor(totalSeconds / 60) % 60;
-      const hours = Math.floor(totalSeconds / 3600) % 24;
-      const days = Math.floor(totalSeconds / 86400);
+      const start = Date.now();
 
-      const uptimeStr = `𝙳ays: ${days} | 𝙷ours: ${hours} | 𝙼inutes: ${minutes} | 𝚂econds: ${seconds}`;
-
-      // CPU & RAM usage
-      const cpuUsage = await osu.cpu.usage();
-      const memInfo = await osu.mem.info();
-      const ramUsage = memInfo.usedMemMb.toFixed(2);
-      const ramTotal = memInfo.totalMemMb.toFixed(2);
-
-      // Groups & Users
-      const threads = await api.getThreadList(100, null, ["INBOX"]);
-      const groupCount = threads.filter(t => t.isGroup).length;
-      const userCount = threads.reduce((acc, t) => acc + (t.participantIDs?.length || 0), 0);
-
-      // Cute image
-      const imageUrl = "https://files.catbox.moe/7jqv64.jpg";
-
-      // First send "Calculating..." to measure latency
-      const sentTime = Date.now();
-      api.sendMessage("⏳ checking Kakashi bot uptime ...", event.threadID, async (err, info) => {
+      // প্রথমে latency check message পাঠানো
+      api.sendMessage("⚡ Checking Kakashi Bot Uptime...", event.threadID, async (err, info) => {
         if (err) return;
 
-        const ping = Date.now() - sentTime; // Real latency
+        // আসল ping হিসাব (sendMessage callback পর্যন্ত সময়)
+        const ping = Date.now() - start;
 
+        // ⏱ Uptime calculation
+        const uptimeMs = Date.now() - global.botStartTime;
+        const totalSeconds = Math.floor(uptimeMs / 1000);
+        const seconds = totalSeconds % 60;
+        const minutes = Math.floor(totalSeconds / 60) % 60;
+        const hours = Math.floor(totalSeconds / 3600) % 24;
+        const days = Math.floor(totalSeconds / 86400);
+
+        const uptimeStr = `𝙳ays: ${days} | 𝙷ours: ${hours} | 𝙼inutes: ${minutes} | 𝚂econds: ${seconds}`;
+
+        // 🔹 CPU & RAM usage
+        const [cpuUsage, memInfo] = await Promise.all([
+          cpu.usage(),
+          mem.info()
+        ]);
+        const ramUsage = memInfo.usedMemMb.toFixed(2);
+        const ramTotal = memInfo.totalMemMb.toFixed(2);
+
+        // 🔹 Groups & Users
+        const threads = await api.getThreadList(100, null, ["INBOX"]);
+        const groupCount = threads.filter(t => t.isGroup).length;
+        const userCount = threads.reduce((acc, t) => acc + (t.participantIDs?.length || 0), 0);
+
+        // Cute image
+        const imageUrl = "https://files.catbox.moe/7jqv64.jpg";
+
+        // Final message
         const msgBody = `
 ╔══════•❀•══════╗
    🐾 𝙺𝙰𝙺𝙰𝚂𝙷𝙸 𝙱𝙾𝚃 🐾
@@ -63,16 +70,17 @@ module.exports = {
 ╚═══════• 💖 •═══════╝
 `;
 
-        // ডিলিট করে আবার proper মেসেজ + ইমেজ পাঠানো
-        api.unsendMessage(info.messageID, () => {
-          api.sendMessage(
-            {
-              body: msgBody,
-              attachment: await global.utils.getStreamFromURL(imageUrl)
-            },
-            event.threadID
-          );
-        });
+        // প্রথম মেসেজ ডিলিট
+        try { await api.unsendMessage(info.messageID); } catch (e) {}
+
+        // নতুন মেসেজ পাঠানো (টেক্সট + ইমেজ)
+        api.sendMessage(
+          {
+            body: msgBody,
+            attachment: await global.utils.getStreamFromURL(imageUrl)
+          },
+          event.threadID
+        );
       });
 
     } catch (err) {

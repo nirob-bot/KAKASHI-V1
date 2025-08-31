@@ -1,6 +1,4 @@
-/cmd install uptime.js const osu = require("node-os-utils");
-const cpu = osu.cpu;
-const mem = osu.mem;
+const osu = require("node-os-utils");
 
 // Bot start time
 if (!global.botStartTime) global.botStartTime = Date.now();
@@ -9,7 +7,7 @@ module.exports = {
   config: {
     name: "uptime",
     aliases: ["up", "upt"],
-    version: "2.6",
+    version: "2.5",
     author: "VEX_ADNAN",
     role: 0,
     category: "System",
@@ -17,42 +15,37 @@ module.exports = {
 
   onStart: async function ({ api, event }) {
     try {
+      // প্রথমে latency মাপার জন্য মেসেজ পাঠানো
       const start = Date.now();
-
-      // প্রথমে latency check message পাঠানো
       api.sendMessage("⚡ Checking Kakashi Bot Uptime...", event.threadID, async (err, info) => {
         if (err) return;
 
-        // আসল ping হিসাব (sendMessage callback পর্যন্ত সময়)
-        const ping = Date.now() - start;
+        const ping = Date.now() - start; // আসল latency
 
-        // ⏱ Uptime calculation
+        // Uptime calculation
         const uptimeMs = Date.now() - global.botStartTime;
         const totalSeconds = Math.floor(uptimeMs / 1000);
         const seconds = totalSeconds % 60;
         const minutes = Math.floor(totalSeconds / 60) % 60;
         const hours = Math.floor(totalSeconds / 3600) % 24;
         const days = Math.floor(totalSeconds / 86400);
-
         const uptimeStr = `𝙳ays: ${days} | 𝙷ours: ${hours} | 𝙼inutes: ${minutes} | 𝚂econds: ${seconds}`;
 
-        // 🔹 CPU & RAM usage
-        const [cpuUsage, memInfo] = await Promise.all([
-          cpu.usage(),
-          mem.info()
-        ]);
+        // CPU & RAM usage
+        const cpuUsage = await osu.cpu.usage();
+        const memInfo = await osu.mem.info();
         const ramUsage = memInfo.usedMemMb.toFixed(2);
         const ramTotal = memInfo.totalMemMb.toFixed(2);
 
-        // 🔹 Groups & Users
+        // Groups & Users
         const threads = await api.getThreadList(100, null, ["INBOX"]);
         const groupCount = threads.filter(t => t.isGroup).length;
         const userCount = threads.reduce((acc, t) => acc + (t.participantIDs?.length || 0), 0);
 
         // Cute image
-        const imageUrl = "https://files.catbox.moe/7jqv64.jpg";
+        const imageUrl = "https://files.catbox.moe/sxwdlb.jpeg";
 
-        // Final message
+        // Final message body
         const msgBody = `
 ╔══════•❀•══════╗
    🐾 𝙺𝙰𝙺𝙰𝚂𝙷𝙸 𝙱𝙾𝚃 🐾
@@ -70,10 +63,9 @@ module.exports = {
 ╚═══════• 💖 •═══════╝
 `;
 
-        // প্রথম মেসেজ ডিলিট
+        // পুরনো মেসেজ unsend করে নতুন পাঠানো
         try { await api.unsendMessage(info.messageID); } catch (e) {}
 
-        // নতুন মেসেজ পাঠানো (টেক্সট + ইমেজ)
         api.sendMessage(
           {
             body: msgBody,

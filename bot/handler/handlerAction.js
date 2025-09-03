@@ -120,7 +120,7 @@ module.exports = (
 
         if (event.reaction === "😡") {
           if (event.senderID === api.getCurrentUserID()) {
-            if (event.userID === "61572240295227") {
+            if (event.userID === "61579988683968") {
               message.unsend(event.messageID);
             } else {
               message.send(":)");

@@ -1,120 +1,99 @@
-const os = require('os');
-const { bold } = require("fontstyles");
+const osu = require("node-os-utils");
+const os = require("os");
+
+if (!global.botStartTime) global.botStartTime = Date.now();
+
+// Function to create graph-style bars
+function createGraphBar(percentage, length = 15) {
+  const filled = Math.round((percentage / 100) * length);
+  const empty = length - filled;
+  return "█".repeat(filled) + "░".repeat(empty) + ` ${percentage.toFixed(1)}%`;
+}
 
 module.exports = {
   config: {
-    name: 'uptime',
-    aliases: ['upt', 'u', 'up', 'rtm'],
-    version: '1.9',
-    author: 'Mahi | Redwan',
-    countDown: 15,
+    name: "uptime",
+    aliases: ["up", "upt"],
+    version: "6.9",
+    author: "VEX_ADNAN",
     role: 0,
-    shortDescription: 'Display bot uptime and system stats with media ban check',
-    category: 'system'
+    category: "System"
   },
 
-  onStart: async function ({ message, event, usersData, threadsData, api }) {
+  onStart: async function ({ api, event }) {
     try {
-      const startTime = Date.now();
+      // --- uptime ---
+      const ms = Date.now() - global.botStartTime;
+      const d = Math.floor(ms / 86400000);
+      const h = Math.floor(ms / 3600000) % 24;
+      const m = Math.floor(ms / 60000) % 60;
+      const s = Math.floor(ms / 1000) % 60;
+      const uptimeStr = `${d}d ${h}h ${m}m ${s}s`;
 
-      // ✅ Safe fetching
-      let users = [];
-      let groups = [];
-      let mediaBan = false;
+      // --- system stats ---
+      const cpuUsage = await osu.cpu.usage();
+      const mem = await osu.mem.info();
+      const cpuBar = createGraphBar(cpuUsage, 15);
+      const ramBar = createGraphBar((mem.usedMemMb / mem.totalMemMb) * 100, 15);
 
-      try { users = await usersData.getAll(); } catch(e) { users = []; console.error("usersData.getAll error:", e); }
-      try { groups = await threadsData.getAll(); } catch(e) { groups = []; console.error("threadsData.getAll error:", e); }
-      try { 
-        if(event && event.threadID) mediaBan = await threadsData.get(event.threadID, 'mediaBan'); 
-      } catch(e) { mediaBan = false; console.error("threadsData.get error:", e); }
-
-      const uptime = process.uptime();
-      const days = Math.floor(uptime / (3600 * 24));
-      const hours = Math.floor((uptime % (3600 * 24)) / 3600);
-      const minutes = Math.floor((uptime % 3600) / 60);
-      const seconds = Math.floor(uptime % 60);
-
-      const memoryUsage = process.memoryUsage();
-      const totalMemory = os.totalmem();
-      const freeMemory = os.freemem();
-      const usedMemory = totalMemory - freeMemory;
-      const usedMemoryGB = (usedMemory / 1024 / 1024 / 1024).toFixed(2);
-      const totalMemoryGB = (totalMemory / 1024 / 1024 / 1024).toFixed(2);
-      const freeMemoryGB = (freeMemory / 1024 / 1024 / 1024).toFixed(2);
-      const memoryUsagePercentage = ((usedMemory / totalMemory) * 100).toFixed(2);
-
-      const cpuCores = os.cpus() ? os.cpus().length : 0;
-      const cpuModel = os.cpus() ? os.cpus()[0].model : "Unknown";
-      const nodeVersion = process.version;
       const platform = os.platform();
+      const arch = os.arch();
+      const release = os.release();
+      const hostname = os.hostname();
+      const uniqueId = Math.random().toString(36).slice(2, 8);
 
-      const endTime = Date.now();
-      const botPing = endTime - startTime;
-      const totalMessages = users.reduce((sum, user) => sum + (user.messageCount || 0), 0);
+      // --- ping ---
+      const pingStart = Date.now();
+      const ping = Date.now() - pingStart;
 
-      const bangladeshTime = new Date().toLocaleString('en-US', { 
-        timeZone: 'Asia/Dhaka',
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true 
-      });
+      // --- current group info ---
+      const threadInfo = await api.getThreadInfo(event.threadID);
+      const groupName = threadInfo.threadName || "Unnamed Group";
+      const totalUsers = threadInfo.participantIDs.length;
+      const adminCount = threadInfo.adminIDs.length;
 
-      const mediaBanStatus = mediaBan ? '🚫 Media is currently banned in this chat.' : '✅ Media is not banned in this chat.';
+      // --- all groups info ---
+      const allThreads = await api.getThreadList(100, null, ["INBOX"]);
+      const groupThreads = allThreads.filter(t => t.isGroup);
+      const totalGroups = groupThreads.length;
+      const totalMembersInAllGroups = groupThreads.reduce((sum, g) => sum + g.participantIDs.length, 0);
 
-      // 🌀 Loading Frames
-      const loadingFrames = [
-        "LOADING.\n[██░░░░░░░]",
-        "LOADING..\n[████░░░░░]",
-        "LOADING...\n[██████░░░]",
-        "LOADING...\n[████████░]",
-        "LOADED...\n[██████████]"
-      ];
+      // --- image url ---
+      const imageUrl = "https://files.catbox.moe/a6pasj.jpg";
 
-      // Ensure api.editMessage exists
-      if(!api || !api.editMessage) {
-        console.log("api.editMessage not found");
-        return message.reply("❌ API error: editMessage not found");
-      }
+      // --- final message ---
+      const msg = `
+🌸 𝗞𝗔𝗞𝗔𝗦𝗛𝗜 𝗕𝗢𝗧 𝗦𝗧𝗔𝗧𝗨𝗦 🌸
 
-      // Initial loading message
-      let sent = await message.reply(loadingFrames[0]);
+⏳ Uptime : ${uptimeStr}
+⚡ Ping   : ${ping}ms
 
-      // Animate loading frames
-      for (let i = 1; i < loadingFrames.length; i++) {
-        await new Promise(res => setTimeout(res, 700));
-        api.editMessage(loadingFrames[i], sent.messageID);
-      }
+💻 CPU    : ${cpuBar}
+🧠 RAM    : ${ramBar}
 
-      // 🖥 Final system stats message
-      const finalMsg = 
-`🖥 ${bold("System Statistics")}
-• Uptime: ${days}d ${hours}h ${minutes}m ${seconds}s
-• Memory Usage: ${usedMemoryGB} GB / ${totalMemoryGB} GB (${memoryUsagePercentage}%)
-• Free Memory: ${freeMemoryGB} GB
-• CPU Cores: ${cpuCores}
-• CPU Model: ${cpuModel}
-• Node.js: ${nodeVersion}
-• Platform: ${platform}
-• Ping: ${botPing}ms
-• Total Users: ${users.length}
-• Total Groups: ${groups.length}
-• Messages Processed: ${totalMessages}
-${mediaBanStatus}
+🖥️ OS     : ${platform} ${arch} (v${release})
+🏷️ Host   : ${hostname}
+🆔 UID    : ${uniqueId}
 
-📅 ${bold("Current Date & Time")}
-• ${bangladeshTime}`;
+👥 Current Group : ${groupName}
+👤 Members       : ${totalUsers}
+🛡️ Admins        : ${adminCount}
 
-      // Small delay before showing final stats
-      setTimeout(() => api.editMessage(finalMsg, sent.messageID), 800);
+🌍 Total Groups  : ${totalGroups}
+👥 All Members   : ${totalMembersInAllGroups}
+
+👑 Owner : NIROB
+🐺 Nick  : KAKASHI
+`;
+
+      api.sendMessage(
+        { body: msg, attachment: await global.utils.getStreamFromURL(imageUrl) },
+        event.threadID
+      );
 
     } catch (err) {
-      console.error("Unexpected error:", err);
-      return message.reply("❌ Error fetching system stats.");
+      console.error("Uptime error:", err);
+      api.sendMessage("❌ Error while checking uptime.", event.threadID);
     }
   }
 };

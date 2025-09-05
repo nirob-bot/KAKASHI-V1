@@ -15,7 +15,7 @@ module.exports = {
     name: "uptime",
     aliases: ["up", "upt"],
     version: "6.9",
-    author: "VEX_ADNAN",
+    author: "VEX_ADNAN","modified by NIROB",
     role: 0,
     category: "System"
   },

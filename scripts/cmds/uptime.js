@@ -15,7 +15,7 @@ module.exports = {
     name: "uptime",
     aliases: ["up", "upt"],
     version: "6.9",
-    author: "VEX_ADNAN","modified by NIROB",
+    author: "VEX_ADNAN",
     role: 0,
     category: "System"
   },
@@ -44,6 +44,9 @@ module.exports = {
 
       // --- ping ---
       const pingStart = Date.now();
+      await new Promise(resolve =>
+        api.sendMessage("🏓 Checking uptime...", event.threadID, () => resolve())
+      );
       const ping = Date.now() - pingStart;
 
       // --- current group info ---
@@ -80,14 +83,20 @@ module.exports = {
 🛡️ Admins        : ${adminCount}
 
 🌍 Total Groups  : ${totalGroups}
-👥 All Members   : ${totalMembersInAllGroups}
+👥  Total User   : ${totalMembersInAllGroups}
 
 👑 Owner : NIROB
 🐺 Nick  : KAKASHI
 `;
 
+      // Check if global.utils.getStreamFromURL exists
+      let attachment = null;
+      if (global.utils && typeof global.utils.getStreamFromURL === "function") {
+        attachment = await global.utils.getStreamFromURL(imageUrl);
+      }
+
       api.sendMessage(
-        { body: msg, attachment: await global.utils.getStreamFromURL(imageUrl) },
+        attachment ? { body: msg, attachment } : { body: msg },
         event.threadID
       );
 

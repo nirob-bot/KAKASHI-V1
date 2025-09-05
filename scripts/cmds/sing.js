@@ -1,87 +1,117 @@
+const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
+const ytSearch = require("yt-search");
+const https = require("https");
+
+function deleteAfterTimeout(filePath, timeout = 15000) {
+  setTimeout(() => {
+    if (fs.existsSync(filePath)) {
+      fs.unlink(filePath, (err) => {
+        if (!err) console.log(`✅ Deleted: ${filePath}`);
+        else console.error(`❌ Delete error: ${filePath}`);
+      });
+    }
+  }, timeout);
+}
+
 module.exports = {
- config: {
- name: "sing",
- version: "1.0",
- role: 0,
- author: "kshitiz",
- cooldowns: 5,
- shortdescription: "download music from YouTube",
- longdescription: "",
- category: "music",
- usages: "{pn} music name",
- dependencies: {
- "fs-extra": "",
- "request": "",
- "axios": "",
- "ytdl-core": "",
- "yt-search": ""
- }
- },
+  config: {
+    name: "song",
+    aliases: ["music"],
+    version: "3.2",
+    prefix: false,
+    author: "‎MR᭄﹅ MAHABUB﹅ メꪜ",
+    countDown: 5,
+    role: 0,
+    shortDescription: "Download MP3 using YouTube search",
+    longDescription: "Search YouTube then fetch MP3 from Mahabub CDN API",
+    category: "media",
+    guide: "{p}{n} <song name>",
+  },
 
- onStart: async ({ api, event }) => {
- const axios = require("axios");
- const fs = require("fs-extra");
- const ytdl = require("ytdl-core");
- const request = require("request");
- const yts = require("yt-search");
+  onStart: async function ({ api, event, args }) {
+    if (!args.length)
+      return api.sendMessage(
+        "» উফফ কি গান শুনতে চাস তার ২/১ লাইন তো লেখবি নাকি 😾",
+        event.threadID,
+        event.messageID
+      );
 
- const input = event.body;
- const text = input.substring(12);
- const data = input.split(" ");
+    const songName = args.join(" ");
+    let searchMsgID;
 
- if (data.length < 2) {
- return api.sendMessage("Please specify a music name.", event.threadID);
- }
+    try {
+      // 🔍 Send Searching message
+      const waitMsg = await api.sendMessage(
+        `✨ Discovering "${songName}"...`,
+        event.threadID
+      );
+      searchMsgID = waitMsg.messageID;
 
- data.shift();
- const musicName = data.join(" ");
+      // 🔎 YouTube search
+      const result = await ytSearch(songName);
+      if (!result.videos.length) throw new Error("No YouTube results.");
 
- try {
- api.sendMessage(`✔ | Searching music for "${musicName}".\ ekxin parkhanuhos...`, event.threadID);
+      const top = result.videos[0];
+      const ytUrl = `https://youtu.be/${top.videoId}`;
 
- const searchResults = await yts(musicName);
- if (!searchResults.videos.length) {
- return api.sendMessage("kunai music vetiyena.", event.threadID, event.messageID);
- }
+      // 🌐 Fetch MP3 link from Mahabub CDN API
+      const cdnUrl = `https://mahabub-ytmp3.vercel.app/api/cdn?url=${encodeURIComponent(
+        ytUrl
+      )}`;
+      const { data } = await axios.get(cdnUrl);
 
- const music = searchResults.videos[0];
- const musicUrl = music.url;
+      if (!data.status || !data.cdna)
+        throw new Error("Audio link not found in API.");
 
- const stream = ytdl(musicUrl, { filter: "audioonly" });
+      const title = data.title || "Unknown Title";
+      const audioLink = data.cdna;
 
- const fileName = `${event.senderID}.mp3`;
- const filePath = __dirname + `/cache/${fileName}`;
+      // ✅ Unsend Searching message
+      if (searchMsgID) api.unsendMessage(searchMsgID);
 
- stream.pipe(fs.createWriteStream(filePath));
+      // 📂 File handling
+      const safeFile = title.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 30);
+      const ext = audioLink.includes(".mp3") ? "mp3" : "m4a";
+      const filePath = path.join(__dirname, "cache", `${safeFile}.${ext}`);
 
- stream.on('response', () => {
- console.info('[DOWNLOADER]', 'Starting download now!');
- });
+      if (!fs.existsSync(path.dirname(filePath))) {
+        fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      }
 
- stream.on('info', (info) => {
- console.info('[DOWNLOADER]', `Downloading music: ${info.videoDetails.title}`);
- });
+      const file = fs.createWriteStream(filePath);
+      await new Promise((resolve, reject) => {
+        https
+          .get(audioLink, (res) => {
+            if (res.statusCode === 200) {
+              res.pipe(file);
+              file.on("finish", () => file.close(resolve));
+            } else reject(new Error(`Download failed [${res.statusCode}]`));
+          })
+          .on("error", reject);
+      });
 
- stream.on('end', () => {
- console.info('[DOWNLOADER] Downloaded');
+      // 🎵 Send final message with title + audio
+      await api.sendMessage(
+        {
+          body: `✨ Download complete!\n🎶 TITLE: ${title}\n🔗 ${ytUrl}`,
+          attachment: fs.createReadStream(filePath),
+        },
+        event.threadID,
+        event.messageID
+      );
 
- if (fs.statSync(filePath).size > 26214400) {
- fs.unlinkSync(filePath);
- return api.sendMessage('❌ | The file could not be sent because it is larger than 25MB.', event.threadID);
- }
-
- const message = {
- body: `🙆‍♀️ ❀ tapaiko geet\ ❀ Title: ${music.title}\ Duration: ${music.duration.timestamp}`,
- attachment: fs.createReadStream(filePath)
- };
-
- api.sendMessage(message, event.threadID, () => {
- fs.unlinkSync(filePath);
- });
- });
- } catch (error) {
- console.error('[ERROR]', error);
- api.sendMessage('🥱 ❀ An error occurred while processing the command.', event.threadID);
- }
- }
+      // Delete file after 15s
+      deleteAfterTimeout(filePath, 15000);
+    } catch (err) {
+      console.error("❌ Error:", err.message);
+      if (searchMsgID) api.unsendMessage(searchMsgID);
+      api.sendMessage(
+        `❌ Failed: ${err.message}`,
+        event.threadID,
+        event.messageID
+      );
+    }
+  },
 };

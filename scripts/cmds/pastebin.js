@@ -6,7 +6,7 @@ module.exports = {
   config: {
     name: "pastebin",
     version: "1.3",
-    aliases: ["p-bin", "bin","p"],
+    aliases: ["p-bin", "bin"],
     author: "SANDIP + Arijit",
     countDown: 5,
     role: 2,
@@ -17,12 +17,12 @@ module.exports = {
   },
 
   onStart: async function ({ api, event, args }) {
-    const ownerID = "100069254151118";
+    const ownerID = "61572240295227";
 
     // ❌ Owner check
     if (event.senderID !== ownerID) {
       return api.sendMessage(
-        "❌ ওহো! এই কমান্ডটা শুধু আমার প্রিয় মালিকের জন্য 💖",
+        "❌ ওহো! এই কমান্ডটা শুধু আমার মালিকের জন্য 💖",
         event.threadID,
         event.messageID
       );
@@ -31,7 +31,7 @@ module.exports = {
     // ❌ No filename
     if (!args[0]) {
       return api.sendMessage(
-        "❌ ওহে! প্রথমে আমাকে ফাইলের নাম তো দাও 😹",
+        "❌ ওহ! প্রথমে আমাকে ফাইলের নাম তো দাও 😹",
         event.threadID,
         event.messageID
       );

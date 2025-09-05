@@ -41,13 +41,13 @@ module.exports = {
       api_dev_key: 'LFhKGk5aRuRBII5zKZbbEpQjZzboWDp9'
     });
 
-    const fileName = args[0].replace(/\.js$/, "");
+    const fileName = args[0].replace(/\.js$/, ""); 
     const filePath = path.join(__dirname, '..', 'cmds', fileName + '.js');
 
     // ❌ File not found
     if (!fs.existsSync(filePath)) {
       return api.sendMessage(
-        "❌ হায়! আমার cmds ফোল্ডারে এই ফাইলটা খুঁজে পাচ্ছি না 😿",
+        `❌ হায়! '${fileName}.js' নামে কোনো ফাইল cmds ফোল্ডারে খুঁজে পাচ্ছি না 😿`,
         event.threadID,
         event.messageID
       );
@@ -67,9 +67,9 @@ module.exports = {
       const pasteID = pasteUrl.split("/").pop();
       const rawUrl = `https://pastebin.com/raw/${pasteID}`;
 
-      // ✅ Success message - Bangla + bold style
+      // ✅ Success message - এখন dynamic fileName আসবে
       const message = `✨ 𝗬𝗔𝗬! ফাইল আপলোড সম্পন্ন হয়েছে ✨
-🎶 Filename: "𝗺𝘆𝗰𝗺𝗱"
+🎶 Filename: "${fileName}.js"
 🔗 Link: ${rawUrl}`;
 
       api.sendMessage(message, event.threadID, event.messageID);

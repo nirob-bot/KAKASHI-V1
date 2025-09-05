@@ -14,7 +14,7 @@
   "notesLanguage": "change to your language with ISO 639-1 code, available languages: vi (Vietnamese), en (English)",
   "adminOnly": {
     "enable": false,
-    "ignoreCommand": [61579988683968]
+    "ignoreCommand": [61572240295227]
   },
   "adminBot": [
     "61572240295227",
@@ -22,7 +22,7 @@
   ],
   "whiteListMode": {
     "enable": false,
-    "whiteListIds": [61576661692968],
+    "whiteListIds": [61572240295227],
     "notes": "if you enable this feature, only the ids in the whiteListIds section can use the bot"
   },
   "nickNameBot": "ʚ 𝚔𝚊𝚔𝚊𝚜𝚑𝚒 ♡",
